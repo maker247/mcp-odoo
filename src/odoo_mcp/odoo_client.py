@@ -99,13 +99,41 @@ class OdooClient:
             self.uid = self._common.authenticate(
                 self.db, self.username, self.password, {}
             )
-            if not self.uid:
+            print(f"Authentication result: {self.uid} (type: {type(self.uid)})", file=os.sys.stderr)
+            if self.uid is None or self.uid is False:
+                # Try to get more information about available users
+                print("❌ Authentication returned None/False. Checking available authentication methods...", file=os.sys.stderr)
+                try:
+                    # Try to list available databases
+                    db_list = self._common.db_list()
+                    print(f"Available databases: {db_list}", file=os.sys.stderr)
+                except Exception as db_e:
+                    print(f"Could not list databases: {str(db_e)}", file=os.sys.stderr)
+
+                # Try to get server version
+                try:
+                    version = self._common.version()
+                    print(f"Server version: {version}", file=os.sys.stderr)
+                except Exception as v_e:
+                    print(f"Could not get server version: {str(v_e)}", file=os.sys.stderr)
+
                 raise ValueError("Authentication failed: Invalid username or password")
+            if not isinstance(self.uid, int) or self.uid <= 0:
+                raise ValueError(f"Authentication failed: Invalid user ID returned: {self.uid}")
+            print(f"✅ Authentication successful! User ID: {self.uid}", file=os.sys.stderr)
+        except xmlrpc.client.ProtocolError as e:
+            if e.errcode == 404:
+                print(f"❌ XML-RPC endpoint not found (404). XML-RPC may not be enabled in Odoo.", file=os.sys.stderr)
+                print(f"   Please check your Odoo configuration and ensure XML-RPC is enabled.", file=os.sys.stderr)
+                print(f"   Add 'xmlrpc = True' to your odoo.conf file.", file=os.sys.stderr)
+            raise ConnectionError(f"XML-RPC endpoint not accessible: {e}")
         except (socket.error, socket.timeout, ConnectionError, TimeoutError) as e:
-            print(f"Connection error: {str(e)}", file=os.sys.stderr)
+            print(f"❌ Connection error: {str(e)}", file=os.sys.stderr)
+            print(f"   Please check that Odoo is running on {self.url}", file=os.sys.stderr)
             raise ConnectionError(f"Failed to connect to Odoo server: {str(e)}")
         except Exception as e:
-            print(f"Authentication error: {str(e)}", file=os.sys.stderr)
+            print(f"❌ Authentication error: {str(e)}", file=os.sys.stderr)
+            print(f"   Please verify your credentials and database name.", file=os.sys.stderr)
             raise ValueError(f"Failed to authenticate with Odoo: {str(e)}")
 
     def _execute(self, model, method, *args, **kwargs):

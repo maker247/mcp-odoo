@@ -1,6 +1,6 @@
 {
-  "url": "https://your-odoo-instance.com",
-  "db": "your-database-name",
-  "username": "your-username",
-  "password": "your-password-or-api-key"
+  "url": "http://localhost:8069",
+  "db": "test_32",
+  "username": "digitalsolutions@infinityitsuccess.com",
+  "password": "$0ft@m1n"
 } 
